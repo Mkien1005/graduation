@@ -1,7 +1,16 @@
-import { Controller, Get, Post, Body, Param, Query } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Param,
+  Query,
+  BadRequestException,
+} from '@nestjs/common';
 import { ChatService } from './chat.service';
 import { Message } from './schemas/message.schema';
 import { Session } from './schemas/session.schema';
+import { Types } from 'mongoose';
 
 @Controller('chat')
 export class ChatController {
@@ -38,6 +47,9 @@ export class ChatController {
     @Param('sessionId') sessionId: string,
     @Query('userId') userId: string,
   ): Promise<Message[]> {
+    if (!Types.ObjectId.isValid(sessionId)) {
+      throw new BadRequestException('sessionId không hợp lệ');
+    }
     return this.chatService.getMessages(sessionId, userId);
   }
 }
