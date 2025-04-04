@@ -9,14 +9,14 @@ import { HttpModule } from '@nestjs/axios';
 @Module({
   imports: [
     ConfigModule.forRoot(),
-    MongooseModule.forRootAsync({
-      imports: [ConfigModule],
-      useFactory: async (configService: ConfigService) => ({
-        uri: configService.get<string>('MONGODB_URI'),
-        maxPoolSize: 5,
-      }),
-      inject: [ConfigService],
-    }),
+    // MongooseModule.forRootAsync({
+    //   imports: [ConfigModule],
+    //   useFactory: async (configService: ConfigService) => ({
+    //     uri: configService.get<string>('MONGODB_URI'),
+    //     maxPoolSize: 5,
+    //   }),
+    //   inject: [ConfigService],
+    // }),
     MongooseModule.forFeature([
       { name: Session.name, schema: SessionSchema },
       { name: Message.name, schema: MessageSchema },
