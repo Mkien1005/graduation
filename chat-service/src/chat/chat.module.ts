@@ -13,6 +13,7 @@ import { HttpModule } from '@nestjs/axios';
       imports: [ConfigModule],
       useFactory: async (configService: ConfigService) => ({
         uri: configService.get<string>('MONGODB_URI'),
+        maxPoolSize: 5,
       }),
       inject: [ConfigService],
     }),
