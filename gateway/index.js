@@ -1,87 +1,108 @@
 const express = require('express')
 const { verify } = require('jsonwebtoken')
 const cookieParser = require('cookie-parser')
-const { createProxyServer } = require('http-proxy')
 const { createProxyMiddleware } = require('http-proxy-middleware')
 const cors = require('cors')
 const dotenv = require('dotenv')
+
 dotenv.config()
 
 const app = express()
-const proxy = createProxyServer({})
 
+// Cấu hình từ biến môi trường
 const AUTH_SERVICE = process.env.AUTH_SERVICE || 'https://auth-service.onrender.com/api/auth'
 const CHAT_SERVICE = process.env.CHAT_SERVICE || 'https://chat-service.onrender.com/api/chat'
+const ALLOWED_ORIGINS = process.env.ALLOWED_ORIGINS ? process.env.ALLOWED_ORIGINS.split(',') : []
+const JWT_PUBLIC_KEY = process.env.JWT_PUBLIC_KEY?.replace(/\\n/g, '\n')
+const PORT = process.env.PORT || 5000
 
 // Middleware CORS
-const allowedOrigins = process.env.ALLOWED_ORIGINS ? process.env.ALLOWED_ORIGINS.split(',') : []
 app.use(
   cors({
-    origin: function (origin, callback) {
-      if (!origin || allowedOrigins.includes(origin)) {
+    origin: (origin, callback) => {
+      if (!origin || ALLOWED_ORIGINS.length === 0 || ALLOWED_ORIGINS.includes(origin)) {
         callback(null, true)
       } else {
-        callback(new Error('CORS policy does not allow this origin!'))
+        callback(null, false) // Trả về false thay vì throw Error để tránh crash
       }
     },
     credentials: true,
   })
 )
-app.use(cookieParser()) // Để đọc cookies
-const JWT_PUBLIC_KEY = process.env.JWT_PUBLIC_KEY?.replace(/\\n/g, '\n') || 'your-secret-key'
 
-// Middleware xác thực token từ cookie
+app.use(cookieParser())
+
+// Middleware xác thực token
 const authenticateToken = (req, res, next) => {
-  const accessToken = req.cookies['access_token'] // Lấy access token từ cookie
+  const accessToken = req.cookies['access_token']
 
   if (!accessToken) {
     return res.status(401).json({ message: 'Không tìm thấy access token' })
   }
 
-  verify(accessToken, JWT_PUBLIC_KEY, (err, user) => {
-    if (err) {
-      return res.status(403).json({ message: 'Access token không hợp lệ' })
-    }
-    req.user = user // Gắn thông tin user vào request
+  try {
+    const user = verify(accessToken, JWT_PUBLIC_KEY || 'your-secret-key') // Fallback key cho dev
+    req.user = user
     next()
-  })
+  } catch (err) {
+    console.error('JWT verification failed:', err.message)
+    return res.status(403).json({ message: 'Access token không hợp lệ' })
+  }
 }
 
-// Proxy cho dịch vụ Identity
-app.use(
-  '/api/auth',
+// Proxy middleware với error handling
+const createProxy = (target, options = {}) =>
   createProxyMiddleware({
-    target: AUTH_SERVICE,
+    target,
     changeOrigin: true,
+    onError: (err, req, res) => {
+      console.error(`Proxy error for ${target}:`, err.message)
+      res.status(500).json({ message: 'Lỗi kết nối đến dịch vụ' })
+    },
+    ...options,
   })
-)
 
-// Proxy cho dịch vụ Chat
+// Proxy cho Auth Service (không cần auth)
+app.use('/api/auth', createProxy(AUTH_SERVICE))
+
+// Proxy cho Chat Service (có auth, hỗ trợ streaming nếu cần)
 app.use(
   '/api/chat',
   authenticateToken,
-  createProxyMiddleware({
-    target: CHAT_SERVICE,
-    changeOrigin: true,
+  createProxy(CHAT_SERVICE, {
+    // Nếu CHAT_SERVICE hỗ trợ SSE
+    selfHandleResponse: true, // Để tự xử lý response
+    onProxyRes: (proxyRes, req, res) => {
+      res.setHeader('Content-Type', 'text/event-stream')
+      res.setHeader('Cache-Control', 'no-cache')
+      res.setHeader('Connection', 'keep-alive')
+      proxyRes.pipe(res) // Stream response trực tiếp
+    },
   })
 )
 
-// Route ví dụ: Chuyển tiếp đến User Service
+// Route ví dụ cho User Service
 app.get('/users/:id', authenticateToken, (req, res) => {
-  // Gửi thông tin user qua header
-  req.headers['x-user-id'] = req.user.id
-  req.headers['x-user-role'] = req.user.role
-
-  proxy.web(req, res, {
-    target: 'http://user-service:3001', // Địa chỉ User Service
+  const proxy = createProxyMiddleware({
+    target: 'http://user-service:3001',
+    changeOrigin: true,
+    headers: {
+      'x-user-id': req.user.id,
+      'x-user-role': req.user.role,
+    },
   })
-
-  proxy.on('error', (err, req, res) => {
-    console.error('Proxy error:', err)
-    res.status(500).json({ message: 'Lỗi proxy' })
+  proxy(req, res, (err) => {
+    console.error('Proxy error for User Service:', err?.message)
+    res.status(500).json({ message: 'Lỗi proxy đến User Service' })
   })
 })
-const PORT = process.env.PORT || 5000 // Dùng 5000 thay vì 3000
+
+// Xử lý lỗi toàn cục
+app.use((err, req, res, next) => {
+  console.error('Unhandled error:', err.stack)
+  res.status(500).json({ message: 'Lỗi server nội bộ' })
+})
+
 app.listen(PORT, () => {
-  console.log('API Gateway chạy trên port', PORT)
+  console.log(`API Gateway chạy trên port ${PORT}`)
 })
