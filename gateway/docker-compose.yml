@@ -1,0 +1,37 @@
+version: '3.9'
+services:
+  nginx:
+    image: nginx:latest
+    container_name: api-gateway
+    ports:
+      - '80:80'
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf
+    networks:
+      - gateway-network
+  # auth-service:
+  #   build:
+  #     context: ../auth-service
+  #     dockerfile: Dockerfile
+  #   container_name: auth-service
+  #   ports:
+  #     - '3001:3001'
+  #   environment:
+  #     - JWT_SECRET=mySuperSecretKey
+  #     - NODE_ENV=production
+  #   networks:
+  #     - gateway-network
+
+  # frontend:
+  # build:
+  #   context: ../fe
+  #   dockerfile: Dockerfile
+  # container_name: frontend
+  # ports:
+  #   - '3000:3000'
+  # networks:
+  #   - gateway-network
+
+networks:
+  gateway-network:
+    driver: bridge
