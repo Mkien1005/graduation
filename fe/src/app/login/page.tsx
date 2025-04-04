@@ -59,7 +59,7 @@ export default function LoginPage() {
                 <path d='M2 12L12 17L22 12' stroke='currentColor' strokeWidth='2' strokeLinecap='round' strokeLinejoin='round' />
               </svg>
             </div>
-            <h2 className='text-2xl font-bold text-indigo-600'>Tutor ICTU</h2>
+            <h2 className='text-2xl font-bold text-indigo-600'>ICTU TutorAI</h2>
             <p className='text-sm text-gray-500 mt-1'>Đăng nhập để truy cập vào hệ thống học tập</p>
           </div>
 
