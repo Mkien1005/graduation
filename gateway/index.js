@@ -3,14 +3,23 @@ const { verify } = require('jsonwebtoken')
 const cookieParser = require('cookie-parser')
 const { createProxyServer } = require('http-proxy')
 const { createProxyMiddleware } = require('http-proxy-middleware')
+const cors = require('cors')
 const dotenv = require('dotenv')
 dotenv.config()
+
 const app = express()
 const proxy = createProxyServer({})
 
 const AUTH_SERVICE = process.env.AUTH_SERVICE || 'https://auth-service.onrender.com/api/auth'
 const CHAT_SERVICE = process.env.CHAT_SERVICE || 'https://chat-service.onrender.com/api/chat'
 
+// Middleware CORS
+app.use(
+  cors({
+    origin: '*', // Cho phép tất cả các origin (có thể thay đổi theo nhu cầu)
+    credentials: true, // Cho phép gửi cookie từ client
+  })
+)
 app.use(cookieParser()) // Để đọc cookies
 const JWT_PUBLIC_KEY = process.env.JWT_PUBLIC_KEY?.replace(/\\n/g, '\n') || 'your-secret-key'
 

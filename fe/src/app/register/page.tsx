@@ -226,7 +226,9 @@ export default function RegisterPage() {
               />
               {errors.confirmPassword && <p className='mt-1 text-sm text-red-600'>{errors.confirmPassword}</p>}
             </div>
-            <div className='mt-4'>{recaptchaSiteKey && <ReCAPTCHA sitekey={recaptchaSiteKey} onChange={handleRecaptchaChange} />}</div>
+            <div className='mt-4'>
+              {recaptchaSiteKey && <ReCAPTCHA className='w-max' sitekey={recaptchaSiteKey} onChange={handleRecaptchaChange} />}
+            </div>
 
             <div className='mt-6'>
               <button
