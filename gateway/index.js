@@ -1,12 +1,14 @@
-import express from 'express'
-import { verify } from 'jsonwebtoken'
-import cookieParser from 'cookie-parser'
-import { createProxyServer } from 'http-proxy'
+const express = require('express')
+const { verify } = require('jsonwebtoken')
+const cookieParser = require('cookie-parser')
+const { createProxyServer } = require('http-proxy')
+const { createProxyMiddleware } = require('http-proxy-middleware')
+
 const app = express()
 const proxy = createProxyServer({})
 
-const AUTH_SERVICE = 'https://auththen-service.onrender.com/api/auth'
-const CHAT_SERVICE = 'https://chat-service.onrender.com/api/chat'
+const AUTH_SERVICE = process.env.AUTH_SERVICE || 'https://auth-service.onrender.com/api/auth'
+const CHAT_SERVICE = process.env.CHAT_SERVICE || 'https://chat-service.onrender.com/api/chat'
 
 app.use(cookieParser()) // Để đọc cookies
 const JWT_PUBLIC_KEY = process.env.JWT_PUBLIC_KEY || 'your-secret-key'
@@ -31,6 +33,7 @@ const authenticateToken = (req, res, next) => {
 // Proxy cho dịch vụ Identity
 app.use(
   '/api/auth',
+  authenticateToken,
   createProxyMiddleware({
     target: AUTH_SERVICE,
     changeOrigin: true,
@@ -40,6 +43,7 @@ app.use(
 // Proxy cho dịch vụ Chat
 app.use(
   '/api/chat',
+  authenticateToken,
   createProxyMiddleware({
     target: CHAT_SERVICE,
     changeOrigin: true,
@@ -55,8 +59,13 @@ app.get('/users/:id', authenticateToken, (req, res) => {
   proxy.web(req, res, {
     target: 'http://user-service:3001', // Địa chỉ User Service
   })
-})
 
-app.listen(process.env.PORT || 3000, () => {
-  console.log('API Gateway chạy trên port', process.env.PORT || 3000)
+  proxy.on('error', (err, req, res) => {
+    console.error('Proxy error:', err)
+    res.status(500).json({ message: 'Lỗi proxy' })
+  })
+})
+const PORT = process.env.PORT || 5000 // Dùng 5000 thay vì 3000
+app.listen(PORT, () => {
+  console.log('API Gateway chạy trên port', PORT)
 })
