@@ -15,7 +15,7 @@ const CHAT_SERVICE = process.env.CHAT_SERVICE || 'https://chat-service.onrender.
 const ALLOWED_ORIGINS = process.env.ALLOWED_ORIGINS ? process.env.ALLOWED_ORIGINS.split(',') : []
 const JWT_PUBLIC_KEY = process.env.JWT_PUBLIC_KEY?.replace(/\\n/g, '\n')
 const PORT = process.env.PORT || 5000
-
+console.log('ALLOWED_ORIGINS :>> ', ALLOWED_ORIGINS)
 // Middleware CORS
 app.use(
   cors({
