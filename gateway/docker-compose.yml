@@ -10,17 +10,17 @@ services:
     networks:
       - gateway-network
   # auth-service:
-    build:
-      context: ../auth-service
-      dockerfile: Dockerfile
-    container_name: auth-service
-    ports:
-      - '3001:3001'
-    environment:
-      - JWT_SECRET=mySuperSecretKey
-      - NODE_ENV=production
-    networks:
-      - gateway-network
+  #   build:
+  #     context: ../auth-service
+  #     dockerfile: Dockerfile
+  #   container_name: auth-service
+  #   ports:
+  #     - '3001:3001'
+  #   environment:
+  #     - JWT_SECRET=mySuperSecretKey
+  #     - NODE_ENV=production
+  #   networks:
+  #     - gateway-network
 
   # frontend:
   # build:
