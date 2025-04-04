@@ -3,7 +3,8 @@ const { verify } = require('jsonwebtoken')
 const cookieParser = require('cookie-parser')
 const { createProxyServer } = require('http-proxy')
 const { createProxyMiddleware } = require('http-proxy-middleware')
-
+const dotenv = require('dotenv')
+dotenv.config()
 const app = express()
 const proxy = createProxyServer({})
 
@@ -11,7 +12,7 @@ const AUTH_SERVICE = process.env.AUTH_SERVICE || 'https://auth-service.onrender.
 const CHAT_SERVICE = process.env.CHAT_SERVICE || 'https://chat-service.onrender.com/api/chat'
 
 app.use(cookieParser()) // Để đọc cookies
-const JWT_PUBLIC_KEY = process.env.JWT_PUBLIC_KEY.replace(/\\n/g, '\n') || 'your-secret-key'
+const JWT_PUBLIC_KEY = process.env.JWT_PUBLIC_KEY?.replace(/\\n/g, '\n') || 'your-secret-key'
 
 // Middleware xác thực token từ cookie
 const authenticateToken = (req, res, next) => {
