@@ -58,7 +58,11 @@ export class AuthService {
       password: hashedPassword,
     });
 
-    return true;
+    return {
+      success: true,
+      message:
+        'Đăng ký thành công. Vui lòng kiểm tra email để kích hoạt tài khoản.',
+    };
   }
 
   async login(loginDto: LoginDto) {
@@ -145,7 +149,11 @@ export class AuthService {
     const token = await this.jwtService.signAsync({ email });
 
     await this.mailService.sendResetPassword(email, token);
-    return true;
+    return {
+      success: true,
+      message:
+        'Vui lòng kiểm tra email để đặt lại mật khẩu. Nếu không thấy email, vui lòng kiểm tra thư mục spam.',
+    };
   }
 
   async changePassword(
@@ -158,7 +166,10 @@ export class AuthService {
     }
     const hashedPassword = await bcrypt.hash(newPassword, 10);
     await this.userRepository.update({ email }, { password: hashedPassword });
-    return true;
+    return {
+      success: true,
+      message: 'Đặt lại mật khẩu thành công.',
+    };
   }
 
   async verifyCaptcha(token: string) {

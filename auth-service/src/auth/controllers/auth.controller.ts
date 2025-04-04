@@ -35,7 +35,7 @@ export class AuthController {
         : 7 * 24 * 60 * 60 * 1000, // 30 ngày hoặc 7 ngày
     });
 
-    return response.json({ message: 'Đăng nhập thành công' });
+    return response.json({ success: true, message: 'Đăng nhập thành công' });
   }
 
   @Public()
@@ -54,7 +54,10 @@ export class AuthController {
         maxAge: 60 * 60 * 1000, // 1 giờ
       });
 
-      return response.json({ message: 'Làm mới token thành công' });
+      return response.json({
+        success: true,
+        message: 'Làm mới token thành công',
+      });
     } catch (error) {
       return response.status(401).json({ message: 'Làm mới token thất bại' });
     }
@@ -67,12 +70,12 @@ export class AuthController {
 
   @Public()
   @Post('forgot-password')
-  async forgotPassword(@Body('email') email: string): Promise<boolean> {
+  async forgotPassword(@Body('email') email: string) {
     return await this.authService.forgotPassword(email);
   }
 
   @Post('change-password')
-  async changePassword(@Req() req: any, @Body() body: any): Promise<boolean> {
+  async changePassword(@Req() req: any, @Body() body: any) {
     const email = req.user.email;
     const { password, confirmPassword } = body;
     return await this.authService.changePassword(
