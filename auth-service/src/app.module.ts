@@ -4,6 +4,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { UserModule } from './user/user.module';
 import { AuthGuard } from './auth/guards/auth.guard';
+import { ChatModule } from './chat/chat.module';
 
 @Module({
   imports: [
@@ -28,6 +29,7 @@ import { AuthGuard } from './auth/guards/auth.guard';
     }),
     AuthModule,
     UserModule,
+    ChatModule,
   ],
   controllers: [],
   providers: [
