@@ -33,7 +33,6 @@ const authenticateToken = (req, res, next) => {
 // Proxy cho dịch vụ Identity
 app.use(
   '/api/auth',
-  authenticateToken,
   createProxyMiddleware({
     target: AUTH_SERVICE,
     changeOrigin: true,
