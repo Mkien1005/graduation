@@ -26,14 +26,14 @@ const axiosInstance = axios.create({
   },
 })
 
-// Instance cho các request không yêu cầu token
-const axiosPublic = axios.create({
-  baseURL: API_BASE_URL,
-  withCredentials: true,
-  headers: {
-    'Content-Type': 'application/json',
-  },
-})
+// // Instance cho các request không yêu cầu token
+// const axiosPublic = axios.create({
+//   baseURL: API_BASE_URL,
+//   withCredentials: true,
+//   headers: {
+//     'Content-Type': 'application/json',
+//   },
+// })
 
 // Interceptor request
 axiosInstance.interceptors.request.use(
@@ -90,4 +90,4 @@ axiosInstance.interceptors.response.use(
   }
 )
 
-export { axiosInstance, axiosPublic }
+export { axiosInstance }

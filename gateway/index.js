@@ -14,10 +14,17 @@ const AUTH_SERVICE = process.env.AUTH_SERVICE || 'https://auth-service.onrender.
 const CHAT_SERVICE = process.env.CHAT_SERVICE || 'https://chat-service.onrender.com/api/chat'
 
 // Middleware CORS
+const allowedOrigins = process.env.ALLOWED_ORIGINS ? process.env.ALLOWED_ORIGINS.split(',') : []
 app.use(
   cors({
-    origin: '*', // Cho phép tất cả các origin (có thể thay đổi theo nhu cầu)
-    credentials: true, // Cho phép gửi cookie từ client
+    origin: function (origin, callback) {
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true)
+      } else {
+        callback(new Error('CORS policy does not allow this origin!'))
+      }
+    },
+    credentials: true,
   })
 )
 app.use(cookieParser()) // Để đọc cookies
