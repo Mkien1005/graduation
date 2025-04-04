@@ -2,7 +2,6 @@ import { Module } from '@nestjs/common';
 import { ChatController } from './chat.controller';
 import { ChatService } from './chat.service';
 import { MongooseModule } from '@nestjs/mongoose';
-import { ConfigModule, ConfigService } from '@nestjs/config';
 import { Session, SessionSchema } from './schemas/session.schema';
 import { Message, MessageSchema } from './schemas/message.schema';
 import { HttpModule } from '@nestjs/axios';
