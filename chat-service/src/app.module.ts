@@ -4,9 +4,12 @@ import { MongooseModule } from '@nestjs/mongoose';
 
 @Module({
   imports: [
-    MongooseModule.forRoot(
-      'mongodb+srv://phungmanhkien20:SMixxGAQoTLS3x0Q@chat.xnxw9gh.mongodb.net/?retryWrites=true&w=majority&appName=Chat',
-    ),
+    MongooseModule.forRootAsync({
+      useFactory: async () => ({
+        uri: process.env.MONGODB_URI || 'mongodb://localhost:27017/test',
+        maxPoolSize: 5, // Giới hạn số kết nối
+      }),
+    }),
     ChatModule,
   ],
 })
