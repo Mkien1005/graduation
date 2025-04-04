@@ -23,14 +23,14 @@ services:
       - gateway-network
 
   # frontend:
-    build:
-      context: ../fe
-      dockerfile: Dockerfile
-    container_name: frontend
-    ports:
-      - '3000:3000'
-    networks:
-      - gateway-network
+  # build:
+  #   context: ../fe
+  #   dockerfile: Dockerfile
+  # container_name: frontend
+  # ports:
+  #   - '3000:3000'
+  # networks:
+  #   - gateway-network
 
 networks:
   gateway-network:

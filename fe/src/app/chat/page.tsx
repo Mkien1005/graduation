@@ -222,7 +222,7 @@ export default function Home() {
                   className={`mb-4 w-max ${
                     message.role === 'user' ? 'bg-blue-100 rounded-lg p-3 ml-auto max-w-3xl' : 'bg-gray-100 rounded-lg p-3 mr-auto max-w-3xl'
                   }`}>
-                  <p className='whitespace-pre-wrap text-black w-max'>{message.content}</p>
+                  <p className='whitespace-pre-wrap text-black break-words max-w-full'>{message.content}</p>
                 </div>
               ))
             )}
