@@ -11,7 +11,7 @@ const AUTH_SERVICE = process.env.AUTH_SERVICE || 'https://auth-service.onrender.
 const CHAT_SERVICE = process.env.CHAT_SERVICE || 'https://chat-service.onrender.com/api/chat'
 
 app.use(cookieParser()) // Để đọc cookies
-const JWT_PUBLIC_KEY = process.env.JWT_PUBLIC_KEY || 'your-secret-key'
+const JWT_PUBLIC_KEY = process.env.JWT_PUBLIC_KEY.replace(/\\n/g, '\n') || 'your-secret-key'
 
 // Middleware xác thực token từ cookie
 const authenticateToken = (req, res, next) => {
