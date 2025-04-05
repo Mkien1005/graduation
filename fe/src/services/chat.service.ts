@@ -44,14 +44,23 @@ export async function sendMessage(content: string, sessionId?: string) {
   const reader = res?.body?.getReader()
   const decoder = new TextDecoder() // Dùng để decode binary data thành text
 
-  while (true) {
-    const { done, value }: any = await reader?.read() // Đọc từng chunk
-    if (done) {
-      console.log('Stream completed')
-      break
+  let data = ''
+  // Đọc dữ liệu streaming
+  const readStream = async () => {
+    while (true) {
+      const { done, value }: any = await reader?.read()
+      if (done) {
+        console.log('Stream hoàn tất')
+        break
+      }
+      // Giải mã chunk dữ liệu
+      const chunk = decoder.decode(value, { stream: true })
+      console.log(chunk)
+      data += chunk
     }
-    const chunkText = decoder.decode(value, { stream: true }) // Decode ngay lập tức
-    console.log('Chunk received:', chunkText) // Log từng chunk ngay khi nhận
-    return res
+    console.log('data :>> ', data)
   }
+
+  // Bắt đầu đọc stream
+  readStream().catch((err) => console.error('Lỗi khi đọc stream:', err))
 }

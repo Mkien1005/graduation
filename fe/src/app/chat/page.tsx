@@ -38,36 +38,9 @@ export default function Home() {
     scrollToBottom()
   }, [messages])
 
-  // Lưu tin nhắn vào localStorage khi messages hoặc currentConversation thay đổi
-  //   useEffect(() => {
-  //     if (currentConversation && messages.length > 0) {
-  //       const conversation = getConversation(currentConversation);
-  //       if (conversation) {
-  //         saveConversation(currentConversation, conversation.title, messages);
-  //       }
-  //     }
-  //   }, [messages, currentConversation]);
-
   const handleSubmit = async (e: any) => {
     e.preventDefault()
     if (input.trim() === '') return
-
-    // Tạo một conversation mới nếu chưa có
-    let conversationId = currentConversation
-    if (!conversationId) {
-      conversationId = Date.now().toString()
-      const newConversation = {
-        id: conversationId,
-        title: input.length > 30 ? input.substring(0, 30) + '...' : input,
-        date: new Date().toLocaleDateString(),
-        messages: [],
-      }
-
-      // Lưu vào state và storage
-      //   saveConversation(conversationId, newConversation.title, []);
-      setConversations([newConversation, ...conversations])
-      setCurrentConversation(conversationId)
-    }
 
     // Thêm tin nhắn của người dùng
     const userMessage: Message = { role: 'user', content: input }
@@ -77,32 +50,64 @@ export default function Home() {
     setIsLoading(true)
 
     try {
-      // Gọi API để lấy phản hồi
-      const response = await sendMessage(input)
+      const res = await fetch('http://localhost:5000/api/chat/message', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          content: input,
+          sessionId: null,
+        }),
+        credentials: 'include',
+      })
 
-      if (!response) {
-        throw new Error('Lỗi khi gọi API')
+      console.log('res :>> ', res)
+      if (!res.ok) {
+        throw new Error('Failed to send message')
       }
 
-      // const data = await response.json()
+      const reader = res.body?.getReader()
+      const decoder = new TextDecoder()
 
-      // // Thêm phản hồi từ AI
-      // const newMessages: Message[] = [...updatedMessages, { role: 'assistant', content: data.message }]
-      // setMessages(newMessages)
+      // Thêm tin nhắn rỗng cho assistant
+      setMessages((prevMessages) => [...prevMessages, { role: 'assistant', content: '' }])
 
-      // Lưu tin nhắn vào localStorage
-      //   saveConversation(conversationId, conversations.find(c => c.id === conversationId)?.title || 'Cuộc hội thoại mới', newMessages);
+      // Đọc dữ liệu streaming
+      const readStream = async () => {
+        while (true) {
+          const { done, value }: any = await reader?.read()
+          if (done) {
+            console.log('Stream hoàn tất')
+            break
+          }
 
-      // Cập nhật danh sách cuộc hội thoại
-      //   setConversations(getSortedConversations());
+          // Giải mã chunk dữ liệu
+          const chunk = decoder.decode(value, { stream: true })
+          console.log('Chunk:', chunk)
+
+          // Cập nhật state với chunk mới
+          setMessages((prevMessages) => {
+            const newMessages = [...prevMessages]
+            const lastMessage = newMessages[newMessages.length - 1]
+
+            // Chỉ nối nếu chunk mới chưa có
+            if (!lastMessage.content.endsWith(chunk)) {
+              lastMessage.content += chunk
+            }
+
+            return newMessages
+          })
+
+          scrollToBottom()
+        }
+      }
+
+      readStream().catch((err) => console.error('Lỗi khi đọc stream:', err))
     } catch (error) {
       console.error('Error:', error)
-      // Hiển thị thông báo lỗi
       const newMessages: Message[] = [...updatedMessages, { role: 'assistant', content: 'Xin lỗi, đã xảy ra lỗi. Vui lòng thử lại.' }]
       setMessages(newMessages)
-
-      // Vẫn lưu lỗi vào localStorage để đảm bảo lịch sử nhất quán
-      //   saveConversation(conversationId, conversations.find(c => c.id === conversationId)?.title || 'Cuộc hội thoại mới', newMessages);
     } finally {
       setIsLoading(false)
     }
@@ -220,7 +225,7 @@ export default function Home() {
               ))
             )}
             {isLoading && (
-              <div className='bg-gray-100 rounded-lg p-3 mr-auto max-w-3xl'>
+              <div className='bg-gray-100 rounded-lg p-3 mr-auto max-w-3xl w-max'>
                 <p className='text-gray-600'>Đang trả lời...</p>
               </div>
             )}
