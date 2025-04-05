@@ -1,10 +1,11 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { Session } from './schemas/session.schema';
 import { Message } from './schemas/message.schema';
 import { HttpService } from '@nestjs/axios';
 import { firstValueFrom } from 'rxjs';
+import { ConfigService } from '@nestjs/config';
 
 @Injectable()
 export class ChatService {
@@ -12,6 +13,7 @@ export class ChatService {
     @InjectModel(Session.name) private sessionModel: Model<Session>,
     @InjectModel(Message.name) private messageModel: Model<Message>,
     private readonly httpService: HttpService,
+    private readonly configService: ConfigService,
   ) {}
 
   // Tạo một phiên hội thoại mới
@@ -38,31 +40,55 @@ export class ChatService {
     userId: string,
     sessionId: string,
     content: string,
+    res: any,
   ): Promise<{ userMessage: Message; ragMessage: Message }> {
-    // Kiểm tra xem session có tồn tại và thuộc về user không
-    const session = await this.sessionModel.findOne({
-      _id: sessionId,
-      userId,
-    });
-    if (!session) {
-      throw new Error('Session not found or not authorized');
+    // Kiểm tra session
+    let session;
+    if (!sessionId) {
+      // Nếu không tìm thấy session thì tạo mới
+      session = new this.sessionModel({
+        userId,
+        messages: [],
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        // Thêm trường khác nếu có (vd: topic, title,...)
+      });
+      await session.save();
+    } else {
+      // Nếu có sessionId thì tìm kiếm session
+
+      session = await this.sessionModel.findOne({
+        _id: sessionId,
+        userId,
+      });
     }
 
     // Lưu tin nhắn của người dùng
     const userMessage = new this.messageModel({
-      sessionId,
+      sessionId: session._id,
       content,
       sender: 'user',
     });
     await userMessage.save();
+    console.log('1 :>> ', this.configService.get('RAG_MODULE_URL'));
+    // Gọi FastAPI với streaming
+    const ragResponseStream = await this.callRagModelWithStreaming(
+      userId,
+      content,
+    );
 
-    // Gửi tin nhắn đến mô hình RAG qua FastAPI
-    const ragResponse = await this.callRagModel(content);
-
-    // Lưu phản hồi của RAG
+    // Tích lũy nội dung từ stream
+    let ragContent = '';
+    for await (const chunk of ragResponseStream) {
+      ragContent += chunk;
+      // Tích lũy nội dung từ stream và gửi từng chunk qua SSE
+      res.write(`${chunk}`);
+    }
+    res.end(); // Kết thúc stream khi hoàn tất
+    // Lưu phản hồi của RAG sau khi stream hoàn tất
     const ragMessage = new this.messageModel({
-      sessionId: new Types.ObjectId(sessionId),
-      content: ragResponse,
+      sessionId: session._id,
+      content: ragContent,
       sender: 'rag',
     });
     await ragMessage.save();
@@ -78,16 +104,33 @@ export class ChatService {
     return { userMessage, ragMessage };
   }
 
-  // Gọi API của FastAPI để lấy phản hồi từ mô hình RAG
-  private async callRagModel(content: string): Promise<string> {
-    try {
-      const response: any = await firstValueFrom(
-        this.httpService.post('http://localhost:8000/rag', { query: content }),
-      );
-      // return response.data.response; // Giả sử FastAPI trả về { "response": "..." }
-      return response.data;
-    } catch (error) {
-      throw new Error('Failed to get response from RAG model');
+  private async *callRagModelWithStreaming(
+    userId: string, // Thêm userId vào đây nếu cần
+    content: string,
+  ): AsyncIterableIterator<string> {
+    const url = this.configService.get('RAG_MODULE_URL'); // Thay bằng URL của FastAPI
+    const body = {
+      message: content,
+      history: [], // Có thể lấy lịch sử từ session nếu cần
+    };
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+
+    if (!response.ok) {
+      throw new BadRequestException(`HTTP error! status: ${response.status}`);
+    }
+
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      const chunk = decoder.decode(value, { stream: true });
+      yield chunk; // Trả về từng chunk
     }
   }
 
@@ -98,9 +141,13 @@ export class ChatService {
       userId,
     });
     if (!session) {
-      throw new Error('Session not found or not authorized');
+      throw new BadRequestException('Session not found or not authorized');
     }
-
-    return this.messageModel.find({ sessionId }).sort({ createdAt: 1 }).exec();
+    console.log('session :>> ', session);
+    return await this.messageModel
+      .find({ sessionId: session._id })
+      .sort({ createdAt: 1 })
+      .populate('sessionId') // Ánh xạ dữ liệu liên kết với session
+      .exec();
   }
 }

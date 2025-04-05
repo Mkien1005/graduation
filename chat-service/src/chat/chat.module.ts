@@ -8,7 +8,6 @@ import { Message, MessageSchema } from './schemas/message.schema';
 import { HttpModule } from '@nestjs/axios';
 @Module({
   imports: [
-    ConfigModule.forRoot(),
     MongooseModule.forFeature([
       { name: Session.name, schema: SessionSchema },
       { name: Message.name, schema: MessageSchema },

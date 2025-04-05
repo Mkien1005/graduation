@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from 'react'
 import Head from 'next/head'
 import Sidebar from '../../components/Sidebar'
+import { sendMessage } from '@/services/chat.service'
 // import { saveConversation, getConversation, getSortedConversations, deleteConversation } from '../services/chatStorage';
 interface Message {
   role: 'user' | 'assistant'
@@ -77,25 +78,17 @@ export default function Home() {
 
     try {
       // Gọi API để lấy phản hồi
-      const response = await fetch('/api/chat', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          messages: updatedMessages,
-        }),
-      })
+      const response = await sendMessage(input)
 
-      if (!response.ok) {
+      if (!response) {
         throw new Error('Lỗi khi gọi API')
       }
 
-      const data = await response.json()
+      // const data = await response.json()
 
-      // Thêm phản hồi từ AI
-      const newMessages: Message[] = [...updatedMessages, { role: 'assistant', content: data.message }]
-      setMessages(newMessages)
+      // // Thêm phản hồi từ AI
+      // const newMessages: Message[] = [...updatedMessages, { role: 'assistant', content: data.message }]
+      // setMessages(newMessages)
 
       // Lưu tin nhắn vào localStorage
       //   saveConversation(conversationId, conversations.find(c => c.id === conversationId)?.title || 'Cuộc hội thoại mới', newMessages);

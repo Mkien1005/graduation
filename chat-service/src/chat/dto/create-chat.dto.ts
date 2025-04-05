@@ -1,13 +1,11 @@
-import { IsString, IsOptional } from 'class-validator';
+import { IsString, IsOptional, IsNotEmpty } from 'class-validator';
 
 export class CreateChatDto {
-  @IsString()
-  userId: string;
-
   @IsOptional()
   @IsString()
   sessionId?: string;
 
   @IsString()
-  message: string;
+  @IsNotEmpty()
+  content: string;
 }

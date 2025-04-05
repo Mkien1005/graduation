@@ -24,10 +24,34 @@ export async function createSession(title: string) {
   return res
 }
 
-export async function sendMessage(sessionId: string, content: string) {
-  const res = await axiosInstance.post('/api/chat/message', { sessionId, content })
+export async function sendMessage(content: string, sessionId?: string) {
+  const res = await fetch('http://localhost:5000/api/chat/message', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      content,
+      sessionId,
+    }),
+    // mode: 'cors',
+    credentials: 'include',
+  })
+  console.log('res :>> ', res)
   if (!res) {
     throw new Error('Failed to send message')
   }
-  return res
+  const reader = res?.body?.getReader()
+  const decoder = new TextDecoder() // Dùng để decode binary data thành text
+
+  while (true) {
+    const { done, value }: any = await reader?.read() // Đọc từng chunk
+    if (done) {
+      console.log('Stream completed')
+      break
+    }
+    const chunkText = decoder.decode(value, { stream: true }) // Decode ngay lập tức
+    console.log('Chunk received:', chunkText) // Log từng chunk ngay khi nhận
+    return res
+  }
 }
